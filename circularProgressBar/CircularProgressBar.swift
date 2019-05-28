@@ -5,7 +5,6 @@
 //  Created by Yogesh Manghnani on 02/05/18.
 //  Copyright © 2018 Yogesh Manghnani. All rights reserved.
 //
-
 import UIKit
 
 
@@ -22,14 +21,14 @@ class CircularProgressBar: UIView {
     
     //MARK: Public
     
-    public var lineWidth:CGFloat = 50 {
+    public var lineWidth:CGFloat = 30 {
         didSet{
             foregroundLayer.lineWidth = lineWidth
             backgroundLayer.lineWidth = lineWidth - (0.20 * lineWidth)
         }
     }
     
-    public var labelSize: CGFloat = 20 {
+    public var labelSize: CGFloat = 17 {
         didSet {
             label.font = UIFont.systemFont(ofSize: labelSize)
             label.sizeToFit()
@@ -43,22 +42,22 @@ class CircularProgressBar: UIView {
         }
     }
     
-    public func setProgress(to progressConstant: Double, withAnimation: Bool) {
+    public func setProgress(to progressConstant: Double, withAnimation: Bool, maxValue: Double) {
         
-        var progress: Double {
+        var progress:Double {
             get {
-                if progressConstant > 1 { return 1 }
-                else if progressConstant < 0 { return 0 }
+                if progressConstant > maxValue { return maxValue }
+                else if progressConstant < 1 { return 1 }
                 else { return progressConstant }
             }
         }
         
-        foregroundLayer.strokeEnd = CGFloat(progress)
+        foregroundLayer.strokeEnd = CGFloat(progress/maxValue)
         
         if withAnimation {
             let animation = CABasicAnimation(keyPath: "strokeEnd")
             animation.fromValue = 0
-            animation.toValue = progress
+            animation.toValue = progress/maxValue
             animation.duration = 2
             foregroundLayer.add(animation, forKey: "foregroundAnimation")
             
@@ -70,14 +69,13 @@ class CircularProgressBar: UIView {
                 timer.invalidate()
             } else {
                 currentTime += 0.05
-                let percent = currentTime/2 * 100
-                self.label.text = "\(Int(progress * percent))"
+                let percent = currentTime/2
+                self.label.text = "\(String(format: "%.2f", Double(progress * percent)))/\(maxValue)"
                 self.setForegroundLayerColorForSafePercent()
                 self.configLabel()
             }
         }
         timer.fire()
-        
     }
     
     
@@ -108,7 +106,6 @@ class CircularProgressBar: UIView {
         self.backgroundLayer.lineWidth = lineWidth - (lineWidth * 20/100)
         self.backgroundLayer.fillColor = UIColor.clear.cgColor
         self.layer.addSublayer(backgroundLayer)
-        
     }
     
     private func drawForegroundLayer(){
@@ -118,12 +115,11 @@ class CircularProgressBar: UIView {
         
         let path = UIBezierPath(arcCenter: pathCenter, radius: self.radius, startAngle: startAngle, endAngle: endAngle, clockwise: true)
         
-        foregroundLayer.lineCap = kCALineCapRound
+        foregroundLayer.lineCap = CAShapeLayerLineCap.round
         foregroundLayer.path = path.cgPath
         foregroundLayer.lineWidth = lineWidth
         foregroundLayer.fillColor = UIColor.clear.cgColor
         foregroundLayer.strokeColor = UIColor.red.cgColor
-        foregroundLayer.strokeEnd = 0
         
         self.layer.addSublayer(foregroundLayer)
         
@@ -144,11 +140,7 @@ class CircularProgressBar: UIView {
     }
     
     private func setForegroundLayerColorForSafePercent(){
-        if Int(label.text!)! >= self.safePercent {
-            self.foregroundLayer.strokeColor = UIColor.green.cgColor
-        } else {
-            self.foregroundLayer.strokeColor = UIColor.red.cgColor
-        }
+        self.foregroundLayer.strokeColor = UIColor.red.cgColor
     }
     
     private func setupView() {
@@ -159,7 +151,6 @@ class CircularProgressBar: UIView {
     
     
     //Layout Sublayers
-
     private var layoutDone = false
     override func layoutSublayers(of layer: CALayer) {
         if !layoutDone {
